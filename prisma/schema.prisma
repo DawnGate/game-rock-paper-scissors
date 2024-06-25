@@ -1,0 +1,41 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model LeaderBoard {
+  userId    String   @id
+  userName  String
+  imageUrl  String
+  point     Int      @default(0)
+  streak    Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  games      Game[] @relation("playA to LeaderBoard")
+  otherGames Game[] @relation("playB to LeaderBoard")
+}
+
+model Game {
+  id        String      @id @default(uuid())
+  playerA   LeaderBoard @relation("playA to LeaderBoard", fields: [playerAId], references: [userId])
+  playerAId String
+  playerB   LeaderBoard @relation("playB to LeaderBoard", fields: [playerBId], references: [userId])
+  playerBId String
+
+  // playId or null
+  winner String?
+
+  // 1: rock, 2: paper, 3: scissors
+  playerAChoice Int?
+  playerBChoice Int?
+
+  gamePoints Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
