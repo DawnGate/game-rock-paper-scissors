@@ -5,7 +5,7 @@ export const FindCombat = () => {
   return (
     <div className="my-4 space-y-2">
       <ChallengeButton />
-      <OptionGroup />
+      {/* <OptionGroup /> */}
     </div>
   );
 };

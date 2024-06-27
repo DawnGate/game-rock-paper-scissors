@@ -4,6 +4,7 @@ import { create } from "zustand";
 type FinishData = {
   gamePoints: number;
   finishGameStatus: FINISH_GAME_STATUS;
+  isTimeout?: boolean;
 };
 
 interface StoreProps {

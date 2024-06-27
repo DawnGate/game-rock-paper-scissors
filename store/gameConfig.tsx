@@ -12,7 +12,13 @@ interface GameConfigState {
   foundChallenge: (gameRoom: GameRoom) => void;
   updateSocketStatus: (isReady: boolean) => void;
   initLeaderBoard: (leaderBoard: LeaderBoard) => void;
-  updateLeaderBoard: ({streak, point}:{ streak: number, point: number }) => void;
+  updateLeaderBoard: ({
+    streak,
+    point,
+  }: {
+    streak: number;
+    point: number;
+  }) => void;
 }
 
 export const useGameConfigStore = create<GameConfigState>((set, get) => ({

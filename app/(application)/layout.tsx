@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { ModalsProvider } from "@/components/providers/ModalsProvider";
 import { SocketProvider } from "@/socket/SocketProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 const Layout = ({ children }: { children: ReactNode }) => {
   const { userId } = auth();
@@ -14,8 +15,9 @@ const Layout = ({ children }: { children: ReactNode }) => {
 
   return (
     <>
-      <SocketProvider>{children}</SocketProvider>;
+      <SocketProvider>{children}</SocketProvider>
       <ModalsProvider />
+      <Toaster />
     </>
   );
 };

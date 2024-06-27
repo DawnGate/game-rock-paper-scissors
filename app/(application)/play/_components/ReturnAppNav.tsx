@@ -1,14 +1,20 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
+import { useCancelGameModal } from "@/store/useCancelGameModal";
 import { ArrowLeftIcon } from "lucide-react";
-import Link from "next/link";
 
 export const ReturnAppNav = () => {
+  const setOpen = useCancelGameModal((state) => state.setOpen);
+
+  const handleBack = () => {
+    setOpen(true);
+  };
+
   return (
-    <Link href="/app">
-      <Button variant="ghost">
-        <ArrowLeftIcon />
-        Back to Home / Exit Combat
-      </Button>
-    </Link>
+    <Button variant="ghost" onClick={handleBack}>
+      <ArrowLeftIcon />
+      Back to Home / Exit Combat
+    </Button>
   );
 };
