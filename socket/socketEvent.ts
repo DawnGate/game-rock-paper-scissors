@@ -1,15 +1,21 @@
+import { SOCKET_EVENTS } from "@/lib/constants";
+
 import { socket } from "@/socket";
 
 export const sendFindGame = (data: { userId: string }) => {
-  socket.emit("game:find", data);
+  socket.emit(SOCKET_EVENTS.FIND_GAME, data);
 };
 
 export const sendCancelFindGame = () => {
-  socket.emit("game:cancel");
+  socket.emit(SOCKET_EVENTS.CANCEL_FIND_GAME);
+};
+
+export const sendCancelCurrentGame = () => {
+  socket.emit(SOCKET_EVENTS.CANCEL_GAME);
 };
 
 export const sendUserChoice = (data: { gameId: string; choice: number }) => {
-  socket.emit("game:user-choice", data);
+  socket.emit(SOCKET_EVENTS.SEND_CHOICE_GAME, data);
 };
 
 export const sendDemoMessage = (

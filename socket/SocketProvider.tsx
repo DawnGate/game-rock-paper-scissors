@@ -10,7 +10,9 @@ import { socket } from "@/socket";
 import { GameRoom } from "@/store/type";
 import { findOrCreateLBById } from "@/app/actions/findOrCreateLBById";
 import { useFinishGameModal } from "@/store/useFinishGameModal";
-import { FINISH_GAME_STATUS } from "@/lib/constants";
+
+import { FINISH_GAME_STATUS, SOCKET_EVENTS } from "@/lib/constants";
+import { toast } from "sonner";
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const { userId } = useAuth();
@@ -81,23 +83,31 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       });
     };
 
-    const onUpdateLeaderBoard = (data: {streak: number, point: number}) => {
-      updateLeaderBoard(data)
+    const onUpdateLeaderBoard = (data: { streak: number; point: number }) => {
+      updateLeaderBoard(data);
+    };
+
+    const onCancelGame = () => {
+      cancelFindChallenge();
+      toast("Your component EXIT the game");
+      router.push("/app");
     };
 
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
-    socket.on("game-status:found", onFoundGame);
-    socket.on("game-status:end", onGameEnd);
-    socket.on("user-leader-board:update", onUpdateLeaderBoard);
+    socket.on(SOCKET_EVENTS.FOUND_GAME, onFoundGame);
+    socket.on(SOCKET_EVENTS.FINISH_GAME, onGameEnd);
+    socket.on(SOCKET_EVENTS.UPDATE_LEADER_BOARD_USER, onUpdateLeaderBoard);
+    socket.on(SOCKET_EVENTS.CANCEL_GAME, onCancelGame);
 
     return () => {
       console.log("clear socket");
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.off("game-status:found", onFoundGame);
-      socket.off("game-status:end", onGameEnd);
-      socket.off("user-leader-board:update", onUpdateLeaderBoard);
+      socket.off(SOCKET_EVENTS.FOUND_GAME, onFoundGame);
+      socket.off(SOCKET_EVENTS.FINISH_GAME, onGameEnd);
+      socket.off(SOCKET_EVENTS.UPDATE_LEADER_BOARD_USER, onUpdateLeaderBoard);
+      socket.off(SOCKET_EVENTS.CANCEL_GAME, onCancelGame);
     };
   }, [
     router,

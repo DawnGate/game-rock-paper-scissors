@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export const ReduceCounter = () => {
   const [remainSecond, setRemainSecond] = useState(90);

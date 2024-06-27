@@ -1,12 +1,11 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { socketEvents } from "./socketEvents.js";
+import { dbActions } from "./dbActions.js";
 
 const waitingPlayers = [];
 const games = {};
 
 // action with this
-
-const removeWaitingItem = (socketId) => {
+const removeWaitingPlayerBySocketId = ({ socketId }) => {
   const itemIndex = waitingPlayers.findIndex(
     (item) => item.socketId === socketId
   );
@@ -14,262 +13,37 @@ const removeWaitingItem = (socketId) => {
   waitingPlayers.splice(itemIndex, 1);
 };
 
-const getSocketById = async (io, socketId) => {
-  const [socket] = await io.in(socketId).fetchSockets();
-  return socket;
-};
+const cancelGameBySocketId = async ({ socketId }, callback) => {
+  const foundGame = Object.values(games).find((item) =>
+    item.socketIds.includes(socketId)
+  );
 
-const createGameCombat = async ({ playerId, otherPlayerId, gamePoints }) => {
-  try {
-    const newGame = await prisma.game.create({
-      data: {
-        playerAId: playerId,
-        playerBId: otherPlayerId,
-        gamePoints,
-      },
-      include: {
-        playerA: true,
-        playerB: true,
-      },
-    });
+  if (!foundGame) return;
 
-    return newGame;
-  } catch (err) {
-    console.error(err);
-    throw new Error("DB:Error", err.toString());
-  }
-};
-
-const updatePointAndStreak = async ({
-  gamePoints,
-  isWin,
-  player,
-  socketId,
-  io,
-}) => {
-  const updatedLeaderBoard = await prisma.leaderBoard.update({
-    where: {
-      userId: player.userId,
-    },
-    data: {
-      streak: isWin ? player.streak + 1 : 0,
-      point: isWin
-        ? player.point + gamePoints
-        : Math.max(player.point - gamePoints, 0),
-    },
-  });
-
-  const socket = await getSocketById(io, socketId);
-  socket.emit("user-leader-board:update", {
-    streak: updatedLeaderBoard.streak,
-    point: updatedLeaderBoard.point,
+  callback({
+    game: foundGame,
   });
 };
 
-const updateGameWinner = async ({
-  gameId,
-  winner,
-  playerChoice,
-  otherPlayerChoice,
-}) => {
-  try {
-    const updatedGame = await prisma.game.update({
-      where: {
-        id: gameId,
-      },
-      data: {
-        winner,
-        playerAChoice: playerChoice,
-        playerBChoice: otherPlayerChoice,
-      },
-      include: {
-        playerA: true,
-        playerB: true,
-      },
-    });
+const updatePointAndStreak = async (
+  { gamePoints, isWin, player },
+  callback
+) => {
+  const newStreak = isWin ? player.streak + 1 : 0;
+  const newPoint = isWin
+    ? player.point + gamePoints
+    : Math.max(player.point - gamePoints, 0);
 
-    return updatedGame;
-  } catch (err) {
-    console.error(err);
-    throw new Error("DB:Error", err.toString());
-  }
+  const updatedLeaderBoard = await dbActions.updateLeaderBoardUser({
+    userId: player.userId,
+    newPoint,
+    newStreak,
+  });
+
+  callback({ leaderBoard: updatedLeaderBoard });
 };
 
-const gameHandler = (io, socket) => {
-  const completeGame = async (game) => {
-    try {
-      const [playerId, otherPlayerId] = game.playerIds;
-      const [playerChoice, otherPlayerChoice] = game.choices;
-      const [playerSocketId, otherPlayerSocketId] = game.socketIds;
-
-      const winner = findWinnerFromGame(playerChoice, otherPlayerChoice);
-
-      if (winner === 0) {
-        game.winner = null;
-      } else if (winner === 1) {
-        game.winner = playerId;
-      } else if (winner === -1) {
-        game.winner = otherPlayerId;
-      }
-
-      const gameDb = await updateGameWinner({
-        gameId: game.gameId,
-        winner: game.winner,
-        playerChoice,
-        otherPlayerChoice,
-      });
-
-      if (gameDb.winner) {
-        const playerA = gameDb.playerA;
-        const playerB = gameDb.playerB;
-
-        updatePointAndStreak({
-          isWin: gameDb.winner === playerA.userId,
-          gamePoints: gameDb.gamePoints,
-          player: playerA,
-          socketId: playerSocketId,
-          io,
-        });
-
-        updatePointAndStreak({
-          isWin: gameDb.winner === playerB.userId,
-          gamePoints: gameDb.gamePoints,
-          player: playerB,
-          socketId: otherPlayerSocketId,
-          io,
-        });
-      }
-
-      deleteGameRoomById(game.gameRoomId);
-      io.to(game.gameRoomId).emit("game-status:end", {
-        winner: gameDb.winner,
-        gamePoints: gameDb.gamePoints,
-      });
-    } catch (err) {
-      console.log(err);
-      return;
-    }
-  };
-
-  const receiveCombatValue = (socketId, gameId, choice) => {
-    // check
-    const game = games[gameId];
-
-    if (!game) return false;
-
-    if (!game.socketIds.includes(socketId)) return false;
-
-    if (![1, 2, 3].includes(choice)) return false;
-
-    const indexPosition = game.socketIds.indexOf(socketId);
-
-    game.choices[indexPosition] = choice;
-
-    const [playerChoice, otherPlayerChoice] = game.choices;
-
-    if (playerChoice && otherPlayerChoice) {
-      completeGame(game);
-    }
-
-    return true;
-  };
-
-  const waitingNewGame = async (newSocket, userId) => {
-    try {
-      const player = {
-        socketId: newSocket.id,
-        userId,
-        choice: null,
-      };
-      if (!waitingPlayers.length) {
-        waitingPlayers.push(player);
-        newSocket.emit("game-status:waiting");
-      } else {
-        const otherPlayer = waitingPlayers.pop();
-
-        const gamePoints = 10;
-
-        const gameDb = await createGameCombat({
-          playerId: player.userId,
-          otherPlayerId: otherPlayer.userId,
-          gamePoints,
-        });
-        const gameId = gameDb.id;
-
-        const gameRoomId = `room-game-${gameId}`;
-
-        const otherSocket = await getSocketById(io, otherPlayer.socketId);
-        otherSocket.join(gameRoomId);
-        newSocket.join(gameRoomId);
-
-        io.to(gameRoomId).emit("game-status:found", {
-          gameId,
-          gameRoomId,
-          playerIds: [player.userId, otherPlayer.userId],
-          players: [gameDb.playerA, gameDb.playerB],
-        });
-
-        games[gameId] = {
-          gameRoomId,
-          gameId,
-          playerIds: [player.userId, otherPlayer.userId],
-          socketIds: [player.socketId, otherPlayer.socketId],
-          choices: [null, null],
-          winner: undefined,
-          gamePoints,
-        };
-
-        setTimeout(() => {
-          deleteGameRoomById(gameRoomId);
-        }, 90000);
-      }
-    } catch (err) {
-      // handle error
-      return;
-    }
-  };
-
-  const cancelFindGame = (socket) => {
-    removeWaitingItem(socket.id);
-  };
-
-  const deleteGameRoomById = (gameRoomId) => {
-    if (games[gameRoomId]) {
-      io.socketsLeave(gameRoomId);
-      delete games[gameRoomId];
-    }
-  };
-
-  // match create
-  // send back game:found event
-  // send game:start event
-  // send game:end event
-  // receive and forward: chat message
-  // receive game:user-choice
-  // send game:end -> winner
-
-  socket.on("game:user-choice", ({ gameId, choice }) => {
-    receiveCombatValue(socket.id, gameId, choice);
-  });
-
-  socket.on("game:find", function ({ userId }) {
-    waitingNewGame(socket, userId);
-  });
-
-  socket.on("game:cancel", function () {
-    cancelFindGame(socket);
-  });
-
-  socket.on("disconnect", function () {
-    // ! handle disconnect
-    console.log("disconnect", socket.id);
-    removeWaitingItem(socket.id);
-  });
-
-  console.log(waitingPlayers.length);
-};
-
-const findWinnerFromGame = (playerOneChoice, playerTwoChoice) => {
+const findWinnerFromGame = ({ playerOneChoice, playerTwoChoice }) => {
   // 1 -> rock, 2 -> paper, 3 -> scissors
   // return 0: draw, 1: player one, -1 : player two
 
@@ -288,6 +62,248 @@ const findWinnerFromGame = (playerOneChoice, playerTwoChoice) => {
   }
 
   return -1;
+};
+
+const gameHandler = (io, socket) => {
+  const deleteGameByGameId = ({ gameId }) => {
+    const game = games[gameId];
+    if (!game) return;
+    io.socketsLeave(game.gameRoomId);
+  };
+
+  const getSocketById = async ({ socketId }) => {
+    const [socket] = await io.in(socketId).fetchSockets();
+    return socket;
+  };
+
+  const finishGame = async ({ game }) => {
+    const [playerId, otherPlayerId] = game.playerIds;
+    const [playerChoice, otherPlayerChoice] = game.choices;
+    const [playerSocketId, otherPlayerSocketId] = game.socketIds;
+
+    const winner = findWinnerFromGame({
+      playerOneChoice: playerChoice,
+      playerTwoChoice: otherPlayerChoice,
+    });
+
+    if (winner === 0) {
+      game.winner = null;
+    } else if (winner === 1) {
+      game.winner = playerId;
+    } else if (winner === -1) {
+      game.winner = otherPlayerId;
+    }
+
+    const gameDb = await dbActions.updateGame({
+      gameId: game.gameId,
+      winner: game.winner,
+      playerChoice,
+      otherPlayerChoice,
+    });
+
+    if (gameDb.winner) {
+      const playerA = gameDb.playerA;
+      const playerB = gameDb.playerB;
+
+      updatePointAndStreak(
+        {
+          isWin: gameDb.winner === playerA.userId,
+          gamePoints: gameDb.gamePoints,
+          player: playerA,
+        },
+        async ({ leaderBoard }) => {
+          const socket = await getSocketById({
+            socketId: playerSocketId,
+          });
+
+          if (!socket) return;
+
+          socket.emit(socketEvents.UPDATE_LEADER_BOARD_USER, {
+            streak: leaderBoard.streak,
+            point: leaderBoard.point,
+          });
+        }
+      );
+
+      updatePointAndStreak(
+        {
+          isWin: gameDb.winner === playerB.userId,
+          gamePoints: gameDb.gamePoints,
+          player: playerB,
+        },
+        async ({ leaderBoard }) => {
+          const socket = await getSocketById({
+            socketId: otherPlayerSocketId,
+          });
+
+          if (!socket) return;
+
+          socket.emit(socketEvents.UPDATE_LEADER_BOARD_USER, {
+            streak: leaderBoard.streak,
+            point: leaderBoard.point,
+          });
+        }
+      );
+    }
+
+    deleteGameByGameId(game.gameId);
+    io.to(game.gameRoomId).emit(socketEvents.FINISH_GAME, {
+      winner: gameDb.winner,
+      gamePoints: gameDb.gamePoints,
+    });
+  };
+
+  const receiveCombatValue = ({ socketId, gameId, choice }) => {
+    // check
+    const game = games[gameId];
+
+    if (!game) return false;
+
+    if (!game.socketIds.includes(socketId)) return false;
+
+    if (![1, 2, 3].includes(choice)) return false;
+
+    const indexPosition = game.socketIds.indexOf(socketId);
+
+    game.choices[indexPosition] = choice;
+
+    const [playerChoice, otherPlayerChoice] = game.choices;
+
+    if (playerChoice && otherPlayerChoice) {
+      finishGame({ game });
+    }
+
+    return true;
+  };
+
+  const waitingNewGame = async ({ newSocket, userId }) => {
+    // create new player
+    const player = {
+      socketId: newSocket.id,
+      userId,
+      choice: null,
+    };
+
+    // check if not have any waiting player in list
+    if (!waitingPlayers.length) {
+      waitingPlayers.push(player);
+      newSocket.emit(socketEvents.WAITING_GAME);
+      return;
+    }
+
+    // match game, create a new game
+    const otherPlayer = waitingPlayers.pop();
+
+    const gamePoints = 10;
+
+    const gameDb = await dbActions.createNewGame({
+      playerId: player.userId,
+      otherPlayerId: otherPlayer.userId,
+      gamePoints,
+    });
+
+    const gameId = gameDb.id;
+
+    const gameRoomId = `room-game-${gameId}`;
+
+    const otherSocket = await getSocketById({ socketId: otherPlayer.socketId });
+
+    otherSocket.join(gameRoomId);
+    newSocket.join(gameRoomId);
+
+    io.to(gameRoomId).emit(socketEvents.FOUND_GAME, {
+      gameId,
+      gameRoomId,
+      playerIds: [player.userId, otherPlayer.userId],
+      players: [gameDb.playerA, gameDb.playerB],
+    });
+
+    games[gameId] = {
+      gameRoomId,
+      gameId,
+      playerIds: [player.userId, otherPlayer.userId],
+      socketIds: [player.socketId, otherPlayer.socketId],
+      choices: [null, null],
+      winner: undefined,
+      gamePoints,
+    };
+  };
+
+  const cancelGame = ({ socketId }) => {
+    removeWaitingPlayerBySocketId({ socketId });
+    cancelGameBySocketId({ socketId }, async ({ game }) => {
+      deleteGameByGameId({ gameId: game.gameId });
+
+      console.log("DeletedGame", game);
+
+      const [playerSocketId, otherPlayerSocketId] = game.socketIds;
+      const [playerChoice, otherPlayerChoice] = game.choices;
+
+      const gameDb = await dbActions.updateGame({
+        gameId: game.gameId,
+        playerChoice,
+        otherPlayerChoice,
+      });
+
+      // notify game cancel for other player
+      const notifySocketId =
+        socketId === playerSocketId ? otherPlayerSocketId : playerSocketId;
+
+      const notifySocket = await getSocketById({ socketId: notifySocketId });
+
+      if (!notifySocket) return;
+
+      notifySocket.emit(socketEvents.CANCEL_GAME);
+
+      // update point for cancel player
+      const cancelPlayer =
+        socketId === playerSocketId ? gameDb.playerA : gameDb.playerB;
+      updatePointAndStreak(
+        {
+          isWin: false,
+          gamePoints: gameDb.gamePoints,
+          player: cancelPlayer,
+        },
+        async ({ leaderBoard }) => {
+          const socket = await getSocketById({
+            socketId: socketId,
+          });
+
+          if (!socket) return;
+
+          socket.emit(socketEvents.UPDATE_LEADER_BOARD_USER, {
+            streak: leaderBoard.streak,
+            point: leaderBoard.point,
+          });
+        }
+      );
+    });
+  };
+
+  // socket listener
+  socket.on(socketEvents.FIND_GAME, function ({ userId }) {
+    waitingNewGame({ newSocket: socket, userId });
+  });
+
+  socket.on(socketEvents.CANCEL_FIND_GAME, function () {
+    removeWaitingPlayerBySocketId({ socketId: socket.id });
+  });
+
+  socket.on(socketEvents.SEND_CHOICE_GAME, ({ gameId, choice }) => {
+    receiveCombatValue({ socketId: socket.id, gameId, choice });
+  });
+
+  socket.on(socketEvents.CANCEL_GAME, function () {
+    cancelGame({ socketId: socket.id });
+  });
+
+  socket.on("disconnect", function () {
+    // ! handle disconnect
+    console.log("disconnect", socket.id);
+    cancelGame({ socketId: socket.id });
+  });
+
+  console.log(waitingPlayers.length);
 };
 
 export default gameHandler;
