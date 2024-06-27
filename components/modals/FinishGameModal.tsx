@@ -2,15 +2,19 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useFinishGameModal } from "@/store/useFinishGameModal";
-import { useRouter } from "next/navigation";
-import { useGameConfigStore } from "@/store/gameConfig";
-import { useCallback, useEffect } from "react";
+
 import { FINISH_GAME_STATUS } from "@/lib/constants";
+
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { useGameConfigStore } from "@/store/gameConfig";
+import { useFinishGameModal } from "@/store/useFinishGameModal";
+
 import { cn } from "@/lib/utils";
 
 export const FinishGameModal = () => {
@@ -23,32 +27,26 @@ export const FinishGameModal = () => {
     (state) => state.cancelFindChallenge
   );
 
+  const isTimeout = finishData?.isTimeout;
+
   let yourStatus;
+  let timeoutContent = null;
 
   if (finishData?.finishGameStatus === FINISH_GAME_STATUS.DRAW) {
     yourStatus = "Draw";
   } else if (finishData?.finishGameStatus === FINISH_GAME_STATUS.LOSE) {
     yourStatus = "You Lose";
+    timeoutContent = "TIMEOUT!!! Ran out of time.";
   } else if (finishData?.finishGameStatus === FINISH_GAME_STATUS.WIN) {
     yourStatus = "You Win";
+    timeoutContent = "TIMEOUT!!! Your component is give up.";
   }
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
     cancelFindChallenge();
     router.push("/app");
     setOpen(false);
-  }, [cancelFindChallenge, setOpen, router]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const timeout = setTimeout(() => {
-      handleClose();
-    }, 3000);
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [handleClose, open]);
+  };
 
   return (
     <Dialog
@@ -62,6 +60,8 @@ export const FinishGameModal = () => {
           <DialogTitle>Game Finish</DialogTitle>
         </DialogHeader>
 
+        {isTimeout && <DialogDescription>{timeoutContent}</DialogDescription>}
+
         <div className="my-4 text-center space-y-2">
           <div className="font-bold text-3xl">{yourStatus}</div>
           {finishData &&
@@ -74,7 +74,8 @@ export const FinishGameModal = () => {
                     : "text-rose-500"
                 )}
               >
-                {finishData.gamePoints * finishData.finishGameStatus}&nbsp;Points
+                {finishData.gamePoints * finishData.finishGameStatus}
+                &nbsp;Points
               </div>
             )}
         </div>

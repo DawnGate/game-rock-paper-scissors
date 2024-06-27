@@ -93,12 +93,32 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       router.push("/app");
     };
 
+    const onTimeoutGame = (data: { winner: string; gamePoints: number }) => {
+      const { winner, gamePoints } = data;
+
+      let finishGameStatus = FINISH_GAME_STATUS.LOSE;
+
+      if (winner) {
+        const isWin = winner === userId;
+        finishGameStatus = isWin
+          ? FINISH_GAME_STATUS.WIN
+          : FINISH_GAME_STATUS.LOSE;
+      }
+
+      setOpenFGModal(true, {
+        gamePoints,
+        finishGameStatus,
+        isTimeout: true,
+      });
+    };
+
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on(SOCKET_EVENTS.FOUND_GAME, onFoundGame);
     socket.on(SOCKET_EVENTS.FINISH_GAME, onGameEnd);
     socket.on(SOCKET_EVENTS.UPDATE_LEADER_BOARD_USER, onUpdateLeaderBoard);
     socket.on(SOCKET_EVENTS.CANCEL_GAME, onCancelGame);
+    socket.on(SOCKET_EVENTS.TIMEOUT_GAME, onTimeoutGame);
 
     return () => {
       console.log("clear socket");
@@ -107,7 +127,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       socket.off(SOCKET_EVENTS.FOUND_GAME, onFoundGame);
       socket.off(SOCKET_EVENTS.FINISH_GAME, onGameEnd);
       socket.off(SOCKET_EVENTS.UPDATE_LEADER_BOARD_USER, onUpdateLeaderBoard);
-      socket.off(SOCKET_EVENTS.CANCEL_GAME, onCancelGame);
+      socket.off(SOCKET_EVENTS.TIMEOUT_GAME, onTimeoutGame);
     };
   }, [
     router,

@@ -56,7 +56,7 @@ export const CombatContainer = () => {
     const beforeUnLoad = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      e.returnValue = "Hey, Are You sure about It?";
+      e.returnValue = true;
     };
     window.addEventListener("beforeunload", beforeUnLoad);
 
