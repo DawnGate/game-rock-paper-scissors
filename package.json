@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node server/index.js",
-    "build": "prisma generate dev && next build",
+    "build": "npx prisma generate dev && next build",
     "start": "NODE_ENV=production node server/index.js",
     "lint": "next lint"
   },
