@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node server/index.js",
-    "build": "npx prisma generate dev && next build",
+    "build": "prisma generate dev && next build",
     "start": "NODE_ENV=production node server/index.js",
+    "start:migrate": "NODE_ENV=production prisma migrate deploy && node server/index.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "lucide-react": "^0.395.0",
     "next": "14.2.4",
     "next-themes": "^0.3.0",
+    "prisma": "^5.16.1",
     "react": "^18",
     "react-dom": "^18",
     "socket.io": "^4.7.5",
