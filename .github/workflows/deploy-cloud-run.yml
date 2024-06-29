@@ -31,20 +31,16 @@ jobs:
           docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest
 
-      - id: "deploy"
-        uses: "google-github-actions/deploy-cloudrun@v2"
-        with:
-          service: "${{ secrets.GCR_SERVICE_NAME }}"
-          image: "gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest"
-          env_vars: |-
-            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-            CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}
-            CLERK_PEM_PUBLIC_KEY=${{ secrets.CLERK_PEM_PUBLIC_KEY }}
-            NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-            NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-            NEXT_PUBLIC_GAME_SECONDS=${{ secrets.NEXT_PUBLIC_GAME_SECONDS }}
-            NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/app
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-
-      - name: "Use output"
-        run: 'curl "${{ steps.deploy.outputs.url }}"'
+      - name: Deploy With Google Cloud Run
+        run: gcloud run deploy ${{ secrets.GCR_SERVICE_NAME }} \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest \
+          --port 3000 \
+          --set-env-vars "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" \
+          --set-env-vars "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" \
+          --set-env-vars "CLERK_PEM_PUBLIC_KEY=${{ secrets.CLERK_PEM_PUBLIC_KEY }}" \
+          --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in" \
+          --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up" \
+          --set-env-vars "NEXT_PUBLIC_GAME_SECONDS=${{ secrets.NEXT_PUBLIC_GAME_SECONDS }}" \
+          --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/app" \
+          --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+          --allow-unauthenticated
