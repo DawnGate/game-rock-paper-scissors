@@ -32,6 +32,7 @@ app.prepare().then(() => {
 
     try {
       const publicKey = process.env.CLERK_PEM_PUBLIC_KEY;
+      // ? Note: Don't put "" in pem key, just normal and replace newline by /n
       const decoded = jwt.verify(sessionToken, publicKey);
     } catch (err) {
       console.log(err);
