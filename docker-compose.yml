@@ -12,8 +12,6 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
-    volumes:
-      - db:/var/lib/postgres
 
   db:
     container_name: next-game-db
@@ -30,6 +28,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    volumes:
+      - db:/var/lib/postgres/data
 
 volumes:
   db:
