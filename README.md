@@ -48,3 +48,7 @@ https://viblo.asia/p/docker-image-in-production-cau-chuyen-1gb-hay-100mb-LzD5dXy
 1. Build local
 2. Connect github
 3. Setting ci/cd
+
+# Issues:
+
+- With PEM File as env key, some other service (docker-compose --env-file or google cloud run will replace it with something strange) => so you need convert PEM FIle to string, and change to default with the code

@@ -31,8 +31,8 @@ app.prepare().then(() => {
     }
 
     try {
-      const publicKey = process.env.CLERK_PEM_PUBLIC_KEY;
-      // ? Note: Don't put "" in pem key, just normal and replace newline by /n
+      let publicKey = process.env.CLERK_PEM_PUBLIC_KEY;
+      publicKey = convertPEMToOriginal(publicKey);
       const decoded = jwt.verify(sessionToken, publicKey);
     } catch (err) {
       console.log(err);
@@ -62,3 +62,14 @@ app.prepare().then(() => {
       console.log(`> Ready on http://${hostname}:${port}`);
     });
 });
+
+// utilities
+
+const convertPEMToOriginal = (pem_str) => {
+  let tmp_pem = pem_str;
+  if (!tmp_pem) return "";
+  if (tmp_pem.startsWith('"')) {
+    tmp_pem = tmp_pem.replaceAll('"', "").replaceAll("\\n", "\n");
+  }
+  return tmp_pem;
+};
