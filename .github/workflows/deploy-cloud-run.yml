@@ -35,6 +35,8 @@ jobs:
         run: |
           gcloud run deploy ${{ secrets.GCR_SERVICE_NAME }} \
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.DOCKER_IMAGE_NAME }}:latest \
+          --platform managed \
+          --region us-central1 \
           --port 3000 \
           --set-env-vars "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" \
           --set-env-vars "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" \
