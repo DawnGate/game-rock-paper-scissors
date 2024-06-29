@@ -52,3 +52,5 @@ https://viblo.asia/p/docker-image-in-production-cau-chuyen-1gb-hay-100mb-LzD5dXy
 # Issues:
 
 - With PEM File as env key, some other service (docker-compose --env-file or google cloud run will replace it with something strange) => so you need convert PEM FIle to string, and change to default with the code
+- Add double quote to PEM value, change newline to /n
+- With github action remember add "${{ secrets.KEY}}" to keep `"`

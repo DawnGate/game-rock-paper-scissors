@@ -38,7 +38,7 @@ jobs:
           --platform managed \
           --region us-central1 \
           --port 3000 \
-          --set-env-vars "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" \
+          --set-env-vars "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}"" \
           --set-env-vars "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" \
           --set-env-vars "CLERK_PEM_PUBLIC_KEY=${{ secrets.CLERK_PEM_PUBLIC_KEY }}" \
           --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in" \
