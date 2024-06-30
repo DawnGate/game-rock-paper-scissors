@@ -4,14 +4,17 @@ services:
   nextapp:
     container_name: next-game-rock-paper-scissors
     image: next-game
-    build: .
+    build:
+      context: .
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - 3000:3000
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+    env_file:
+      - .env
 
   db:
     container_name: next-game-db
