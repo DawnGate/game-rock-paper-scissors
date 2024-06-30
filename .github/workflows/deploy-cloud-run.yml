@@ -40,7 +40,7 @@ jobs:
           --port 3000 \
           --set-env-vars "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" \
           --set-env-vars "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" \
-          --set-env-vars "CLERK_PEM_PUBLIC_KEY="`${{ secrets.CLERK_PEM_PUBLIC_KEY }}`" \
+          --set-env-vars "CLERK_PEM_PUBLIC_KEY="`${{ secrets.CLERK_PEM_PUBLIC_KEY }}`"" \
           --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in" \
           --set-env-vars "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up" \
           --set-env-vars "NEXT_PUBLIC_GAME_SECONDS=${{ secrets.NEXT_PUBLIC_GAME_SECONDS }}" \
