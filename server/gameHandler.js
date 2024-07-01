@@ -1,7 +1,7 @@
 import { socketEvents } from "./socketEvents.js";
 import { dbActions } from "./dbActions.js";
 
-const gameTimeout = process.env.NEXT_PUBLIC_GAME_SECONDS ?? 90;
+const gameTimeout = Number(process.env.NEXT_PUBLIC_GAME_SECONDS);
 
 const waitingPlayers = [];
 const games = {};
