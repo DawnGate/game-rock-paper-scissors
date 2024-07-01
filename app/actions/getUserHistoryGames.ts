@@ -25,7 +25,7 @@ export const getUserHistoryGames = async () => {
       playerB: true,
     },
     orderBy: {
-      updatedAt: "asc",
+      updatedAt: "desc",
     },
   });
 
