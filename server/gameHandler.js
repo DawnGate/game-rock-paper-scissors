@@ -72,6 +72,7 @@ const gameHandler = (io, socket) => {
     game.clearCurrentTimeout();
     if (!game) return;
     io.socketsLeave(game.gameRoomId);
+    delete games[gameId];
   };
 
   const getSocketById = async ({ socketId }) => {
