@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "node server/index.js",
+    "prisma:generate": "prisma generate dev",
+    "prisma:migrate": "prisma migrate dev",
     "build": "prisma generate dev && next build",
     "start": "NODE_ENV=production node server/index.js",
     "start:migrate": "NODE_ENV=production prisma migrate deploy && node server/index.js",
@@ -22,6 +24,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cookie": "^0.6.0",
+    "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.395.0",

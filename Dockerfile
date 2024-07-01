@@ -23,6 +23,10 @@ COPY . .
 
 ENV NODE_ENV production
 
+# Load next_public before build
+ARG NEXT_PUBLIC_GAME_SECONDS
+ENV NEXT_PUBLIC_GAME_SECONDS=${NEXT_PUBLIC_GAME_SECONDS}
+
 RUN \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \

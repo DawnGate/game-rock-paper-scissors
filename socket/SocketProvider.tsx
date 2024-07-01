@@ -44,7 +44,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     function onConnect() {
       setIsConnected(true);
       setTransport(socket.io.engine.transport.name);
-      console.log(socket.id);
 
       socket.io.engine.on("upgrade", (transport) => {
         setTransport(transport.name);

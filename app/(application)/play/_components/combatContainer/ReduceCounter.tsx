@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 
+const gameSeconds = Number(process.env.NEXT_PUBLIC_GAME_SECONDS);
+
 export const ReduceCounter = () => {
-  const [remainSecond, setRemainSecond] = useState(
-    Number(process.env.NEXT_PUBLIC_GAME_SECONDS)
-  );
+  const [remainSecond, setRemainSecond] = useState(gameSeconds);
 
   useEffect(() => {
     let timeOut = null;
